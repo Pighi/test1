@@ -4,7 +4,7 @@ import multer from 'multer';
 import cloudinary from '../services/cloudinary.js';
 import pool from '../db.js';
 import { auth } from '../middleware/authMiddleware.js';
-import authMiddleware from '../middleware/authMiddleware.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
