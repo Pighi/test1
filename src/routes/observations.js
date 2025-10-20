@@ -4,6 +4,7 @@ import multer from 'multer';
 import cloudinary from '../services/cloudinary.js';
 import pool from '../db.js';
 import { auth } from '../middleware/authMiddleware.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -44,6 +45,22 @@ router.post('/', auth, upload.array('photos', 6), async (req, res) => {
     res.json({ observation: obs.rows[0], message: 'Observation saved.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/add', authMiddleware, async (req,res) => {
+  const { plantName, description, dateObserved } = req.body;
+  const userId = req.user.id; // from authMiddleware
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO observations (user_id, plant_name, description, date_observed) VALUES ($1,$2,$3,$4) RETURNING *',
+      [userId, plantName, description, dateObserved]
+    );
+    res.json(result.rows[0]);
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
