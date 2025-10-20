@@ -10,7 +10,7 @@ app.use(cookieParser());
 
 // Replace with your frontend URL (Vercel) and localhost for local dev
 const allowedOrigins = [
-  "https://your-frontend.vercel.app",
+  "https://test12-psi-two.vercel.app",
   "http://localhost:5173"
 ];
 
