@@ -1,25 +1,50 @@
-
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
-import authRoutes from './src/routes/auth.js';
-import observationRoutes from './src/routes/observations.js';
-import adminRoutes from './src/routes/admin.js';
-import pool from './src/db.js';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 const app = express();
-
-app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-app.get('/', (req, res) => res.send('Plant Observation Database System Backend'));
+// Replace with your frontend URL (Vercel) and localhost for local dev
+const allowedOrigins = [
+  "https://your-frontend.vercel.app",
+  "http://localhost:5173"
+];
 
-app.use('/api/auth', authRoutes);
-app.use('/api/observations', observationRoutes);
-app.use('/api/admin', adminRoutes);
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true // Important: allows cookies to be sent cross-domain
+}));
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Example JWT secret
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+
+// Simple login/signup routes (replace with your actual logic)
+import jwt from "jsonwebtoken";
+
+const users = []; // temporary storage, replace with DB
+
+app.post("/api/auth/signup", (req, res) => {
+  const { name, email, password } = req.body;
+  if (users.find(u => u.email === email)) return res.status(400).json({ error: "Email exists" });
+  const user = { id: users.length+1, name, email, password, role: "student" };
+  users.push(user);
+  res.json({ message: "User created" });
+});
+
+app.post("/api/auth/login", (req, res) => {
+  const { email, password } = req.body;
+  const user = users.find(u => u.email === email && u.password === password);
+  if (!user) return res.status(401).json({ error: "Invalid credentials" });
+
+  // Generate JWT token
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "1d" });
+
+  // Send token in response
+  res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+});
+
+app.listen(process.env.PORT || 5000, () => console.log("Server running"));
