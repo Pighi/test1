@@ -1,29 +1,33 @@
-
 import express from 'express';
-import pool from '../db.js';
-import { adminAuth } from '../middleware/authMiddleware.js';
+import pool from '../db.js'; // your DB connection
+import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
-router.post('/assign', adminAuth, async (req, res) => {
-  try {
-    const { title, description, assigned_to, due_date } = req.body;
-    const r = await pool.query(
-      'INSERT INTO assignments (title,description,assigned_by,assigned_to,due_date) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-      [title, description, req.user.userId, assigned_to, due_date]
-    );
-    res.json({ assignment: r.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// TEMP: set secret in .env
+// ADMIN_CREATION_SECRET=SomeStrongSecret123!
 
-router.get('/students', adminAuth, async (req, res) => {
+router.post('/create', async (req, res) => {
   try {
-    const r = await pool.query('SELECT id,name,email,created_at FROM users WHERE role=$1', ['student']);
-    res.json({ students: r.rows });
+    // Validate secret
+    if (req.headers['x-admin-secret'] !== process.env.ADMIN_CREATION_SECRET) {
+      return res.status(403).json({ error: 'Forbidden: invalid secret' });
+    }
+
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ error: 'Missing fields' });
+
+    const hash = await bcrypt.hash(password, 10);
+
+    const result = await pool.query(
+      'INSERT INTO users (name, email, password_hash, role) VALUES ($1,$2,$3,$4) RETURNING id,email,role',
+      [name, email, hash, 'admin']
+    );
+
+    res.json({ created: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

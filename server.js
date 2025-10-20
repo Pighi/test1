@@ -2,11 +2,14 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import adminRoutes from './src/routes/admin.js';
 
 dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+// register routes
+app.use('/api/admin', adminRoutes);
 
 // Replace with your frontend URL (Vercel) and localhost for local dev
 const allowedOrigins = [
